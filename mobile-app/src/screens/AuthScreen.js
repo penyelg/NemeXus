@@ -93,7 +93,7 @@ export default function AuthScreen({ initialMessage = '', initialTone = 'info' }
             </View>
             <View style={styles.mobileLoginCopy}>
               <Text style={styles.mobileLoginTitle}>NemeXus Dashboard</Text>
-              <Text style={styles.mobileLoginSubtitle}>Manager and supervisor access</Text>
+              <Text style={styles.mobileLoginSubtitle}>Manager, supervisor, and general manager access</Text>
             </View>
           </View>
         ) : null}

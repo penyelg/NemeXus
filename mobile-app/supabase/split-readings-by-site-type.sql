@@ -94,8 +94,8 @@ drop policy if exists "chlorination readings admin update" on public.chlorinatio
 create policy "chlorination readings admin update"
 on public.chlorination_readings
 for update
-using (public.current_role() in ('admin', 'supervisor', 'manager'))
-with check (public.current_role() in ('admin', 'supervisor', 'manager'));
+using (public.current_role() in ('admin', 'supervisor', 'manager', 'general_manager'))
+with check (public.current_role() in ('admin', 'supervisor', 'manager', 'general_manager'));
 
 drop policy if exists "approved users can update own chlorination readings" on public.chlorination_readings;
 create policy "approved users can update own chlorination readings"
@@ -135,8 +135,8 @@ drop policy if exists "deepwell readings admin update" on public.deepwell_readin
 create policy "deepwell readings admin update"
 on public.deepwell_readings
 for update
-using (public.current_role() in ('admin', 'supervisor', 'manager'))
-with check (public.current_role() in ('admin', 'supervisor', 'manager'));
+using (public.current_role() in ('admin', 'supervisor', 'manager', 'general_manager'))
+with check (public.current_role() in ('admin', 'supervisor', 'manager', 'general_manager'));
 
 drop policy if exists "approved users can update own deepwell readings" on public.deepwell_readings;
 create policy "approved users can update own deepwell readings"

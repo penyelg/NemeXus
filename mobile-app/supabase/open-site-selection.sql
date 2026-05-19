@@ -27,7 +27,7 @@ as $$
       and is_active = true
       and (
         coalesce(is_approved, false) = true
-        or role in ('supervisor', 'manager', 'admin')
+        or role in ('supervisor', 'manager', 'general_manager', 'admin')
       )
   )
 $$;
@@ -49,7 +49,7 @@ for select
 using (
   (
     auth.uid() = id
-    or public.current_role() in ('admin', 'supervisor')
+    or public.current_role() in ('admin', 'supervisor', 'manager', 'general_manager')
   )
   or (
     auth.uid() is not null

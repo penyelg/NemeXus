@@ -61,5 +61,5 @@ drop policy if exists "office roles can manage daily site summaries" on public.d
 create policy "office roles can manage daily site summaries"
 on public.daily_site_summaries
 for all
-using (public.current_role() in ('admin', 'supervisor', 'manager'))
-with check (public.current_role() in ('admin', 'supervisor', 'manager'));
+using (public.current_role() in ('admin', 'supervisor', 'manager', 'general_manager'))
+with check (public.current_role() in ('admin', 'supervisor', 'manager', 'general_manager'));

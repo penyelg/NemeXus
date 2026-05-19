@@ -23,6 +23,8 @@ const initialRoute = {
   name: 'home',
   params: {},
 };
+const OFFICE_ROLES = ['admin', 'supervisor', 'manager', 'general_manager'];
+const ACCOUNT_MANAGER_ROLES = ['admin', 'general_manager'];
 
 function getBackRoute(route) {
   if (route.name === 'reset-password') {
@@ -175,8 +177,9 @@ export default function NemeXusApp() {
   );
 
   let screen = null;
-  const isPrivileged =
-    profile?.role === 'admin' || profile?.role === 'supervisor' || profile?.role === 'manager';
+  const isPrivileged = OFFICE_ROLES.includes(profile?.role);
+  const canManageAccounts = ACCOUNT_MANAGER_ROLES.includes(profile?.role);
+  const isGeneralManager = profile?.role === 'general_manager';
   const isOperator = profile?.role === 'operator';
   const isApprovedForApp = Boolean(profile?.is_active && (profile?.is_approved || isPrivileged));
   const routeName = route.name === 'home' ? (isPrivileged ? 'office-dashboard' : 'site-selection') : route.name;
@@ -236,15 +239,17 @@ export default function NemeXusApp() {
       (routeName === 'office-dashboard' && route.params?.section === 'readings') ||
       (routeName === 'reading-history' && route.params?.source !== 'office-dashboard'));
   const bottomNavActiveKey =
-    profile?.role === 'admin'
-      ? routeName === 'reading-history'
+    canManageAccounts
+      ? routeName === 'office-graphs'
+          ? 'graphs'
+        : routeName === 'reading-history'
           ? 'history'
           : route.params?.section === 'roles'
             ? 'roles'
-            : route.params?.section === 'approvals'
-              ? 'approvals'
-              : route.params?.section === 'readings'
-                ? 'history'
+          : route.params?.section === 'approvals'
+            ? 'approvals'
+            : route.params?.section === 'readings'
+                ? isGeneralManager ? 'dashboard' : 'history'
               : 'dashboard'
       : routeName === 'office-graphs'
         ? 'graphs'

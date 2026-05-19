@@ -1499,7 +1499,7 @@ export default function OfficeGraphsScreen({ navigation }) {
   const scrollViewRef = useRef(null);
   const scrollTopOpacity = useRef(new Animated.Value(0)).current;
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const canExportAnalytics = profile?.role === 'manager' || profile?.role === 'supervisor';
+  const canExportAnalytics = ['manager', 'supervisor', 'general_manager'].includes(profile?.role);
 
   async function loadGraphs({ silent = false } = {}) {
     if (!silent) {
@@ -1614,7 +1614,7 @@ export default function OfficeGraphsScreen({ navigation }) {
   async function handleExportAnalytics(format) {
     if (!canExportAnalytics) {
       setTone('error');
-      setMessage('Only managers and supervisors can export analytics.');
+      setMessage('Only managers, supervisors, and general managers can export analytics.');
       return;
     }
 

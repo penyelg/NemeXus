@@ -462,7 +462,7 @@ function buildOperationAlerts(dashboard, nowDate = new Date()) {
       key: 'pending-approvals',
       severity: 'info',
       title: 'Operator approvals waiting',
-      detail: `${dashboard.pendingApprovals.length} operator account(s) need admin review.`,
+      detail: `${dashboard.pendingApprovals.length} operator account(s) need account manager review.`,
     });
   }
 
@@ -581,12 +581,13 @@ function RoleBadge({ role }) {
     operator: styles.roleOperator,
     supervisor: styles.roleSupervisor,
     manager: styles.roleManager,
+    general_manager: styles.roleGeneralManager,
     admin: styles.roleAdmin,
   }[role] || styles.roleOperator;
 
   return (
     <View style={[styles.roleBadge, appearance]}>
-      <Text style={styles.roleBadgeText}>{String(role || 'operator').toUpperCase()}</Text>
+      <Text style={styles.roleBadgeText}>{formatRoleLabel(role)}</Text>
     </View>
   );
 }
@@ -654,6 +655,19 @@ function OperationAlertsPanel({ alerts, palette }) {
 const NOTIFICATION_FILTERS = [
   { key: 'alerts', label: 'Alerts' },
 ];
+const ACCOUNT_MANAGER_ROLES = ['admin', 'general_manager'];
+const OFFICE_MONITOR_ROLES = ['admin', 'supervisor', 'manager', 'general_manager'];
+
+function formatRoleLabel(role) {
+  return String(role || 'operator').replace(/_/g, ' ').toUpperCase();
+}
+
+function formatRoleChoiceLabel(role) {
+  return String(role || 'operator')
+    .split('_')
+    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+    .join(' ');
+}
 
 function NotificationCenter({
   notifications,
@@ -942,8 +956,9 @@ export default function OfficeDashboardScreen({ navigation, initialSection }) {
   styles = useMemo(() => createStyles(palette, isDark, responsiveMetrics), [palette, isDark, responsiveMetrics]);
   const isWide = width >= 980;
   const isAdmin = profile?.role === 'admin';
-  const requestedSection = initialSection || (isAdmin ? 'overview' : 'readings');
-  const roleChoices = ['operator', 'supervisor', 'manager', 'admin'];
+  const canManageAccounts = ACCOUNT_MANAGER_ROLES.includes(profile?.role);
+  const requestedSection = initialSection || (profile?.role === 'general_manager' ? 'readings' : canManageAccounts ? 'overview' : 'readings');
+  const roleChoices = ['operator', 'supervisor', 'manager', 'general_manager', 'admin'];
   const [activeSection, setActiveSection] = useState(requestedSection);
   const [dashboard, setDashboard] = useState({
     stats: {
@@ -1015,10 +1030,10 @@ export default function OfficeDashboardScreen({ navigation, initialSection }) {
   }, [profile?.id, profile?.email]);
 
   useEffect(() => {
-    if (!isAdmin && activeSection !== 'readings' && activeSection !== 'notifications') {
+    if (!canManageAccounts && activeSection !== 'readings' && activeSection !== 'notifications') {
       setActiveSection('readings');
     }
-  }, [activeSection, isAdmin]);
+  }, [activeSection, canManageAccounts]);
 
   function pushLiveNotification(notification) {
     if (notification?.type !== 'alert') {
@@ -1136,7 +1151,7 @@ export default function OfficeDashboardScreen({ navigation, initialSection }) {
   }, []);
 
   useEffect(() => {
-    if (!supabase || !profile?.role || !['admin', 'manager', 'supervisor'].includes(profile.role)) {
+    if (!supabase || !OFFICE_MONITOR_ROLES.includes(profile?.role)) {
       return undefined;
     }
 
@@ -1179,6 +1194,7 @@ export default function OfficeDashboardScreen({ navigation, initialSection }) {
       { key: 'operator', label: 'Operators', iconName: 'construct-outline' },
       { key: 'supervisor', label: 'Supervisors', iconName: 'shield-checkmark-outline' },
       { key: 'manager', label: 'Managers', iconName: 'briefcase-outline' },
+      { key: 'general_manager', label: 'General Managers', iconName: 'business-outline' },
       { key: 'admin', label: 'Admins', iconName: 'key-outline' },
     ],
     []
@@ -1323,7 +1339,7 @@ export default function OfficeDashboardScreen({ navigation, initialSection }) {
     saveNotificationUnreadCount(profile, totalUnreadNotificationCount);
   }, [profile?.id, profile?.email, totalUnreadNotificationCount]);
 
-  const canViewGraphs = profile?.role === 'manager' || profile?.role === 'supervisor';
+  const canViewGraphs = ['manager', 'supervisor', 'general_manager'].includes(profile?.role);
   const headerStatusChips = [
     {
       key: 'connected',
@@ -1348,7 +1364,7 @@ export default function OfficeDashboardScreen({ navigation, initialSection }) {
     },
   ];
   function renderOverview() {
-    if (!isAdmin) {
+    if (!canManageAccounts) {
       return renderSlotTimeline();
     }
 
@@ -1418,11 +1434,11 @@ export default function OfficeDashboardScreen({ navigation, initialSection }) {
             iconColor={palette.ink900}
             actionIconColor={isDark ? palette.ink900 : palette.navy700}
           />
-          {isAdmin ? (
+          {canManageAccounts ? (
             <SummaryCard
               title="Role management"
               value={dashboard.profiles.length}
-              body="Promote trusted office accounts to supervisor, manager, or admin."
+              body="Promote trusted office accounts to supervisor, manager, general manager, or admin."
               actionLabel="Open"
               onPress={() => setActiveSection('roles')}
               iconName="people-circle-outline"
@@ -1437,7 +1453,7 @@ export default function OfficeDashboardScreen({ navigation, initialSection }) {
   }
 
   function renderApprovals() {
-    if (!isAdmin) {
+    if (!canManageAccounts) {
       return renderSlotTimeline();
     }
 
@@ -1445,7 +1461,7 @@ export default function OfficeDashboardScreen({ navigation, initialSection }) {
       <Card style={styles.panelCard}>
         <SectionHeader
           title="Pending registrations"
-          body="Only admins can approve operators here. Approved accounts can enter the data collection flow immediately."
+          body="Admins and general managers can approve operators here. Approved accounts can enter the data collection flow immediately."
           iconName="person-add-outline"
           iconColor={palette.teal600}
         />
@@ -1795,7 +1811,7 @@ export default function OfficeDashboardScreen({ navigation, initialSection }) {
         <Card style={styles.panelCard}>
           <SectionHeader
             title="Recent readings"
-            body={isAdmin ? 'Latest submissions from the shared database.' : 'This account has readings-only office access.'}
+            body={canManageAccounts ? 'Latest submissions from the shared database.' : 'This account has readings-only office access.'}
             iconName="reader-outline"
             iconColor={palette.teal600}
           />
@@ -1911,7 +1927,7 @@ export default function OfficeDashboardScreen({ navigation, initialSection }) {
   }
 
   function renderRoles() {
-    if (!isAdmin) {
+    if (!canManageAccounts) {
       return null;
     }
 
@@ -1919,7 +1935,7 @@ export default function OfficeDashboardScreen({ navigation, initialSection }) {
       <Card style={styles.panelCard}>
         <SectionHeader
           title="Account roles"
-          body="The first admin is still a one-time SQL bootstrap. After that, only admins can promote accounts here."
+          body="The first admin is still a one-time SQL bootstrap. Admins and general managers can promote or demote accounts here."
           iconName="people-outline"
           iconColor={palette.teal600}
         />
@@ -1975,7 +1991,7 @@ export default function OfficeDashboardScreen({ navigation, initialSection }) {
                 </View>
 
                 {item.id === profile?.id ? (
-                  <MessageBanner tone="info">Current signed-in admin account.</MessageBanner>
+                  <MessageBanner tone="info">Current signed-in account.</MessageBanner>
                 ) : (
                   <View style={styles.rolePickerWrap}>
                     <Text style={styles.rolePickerLabel}>Change role</Text>
@@ -2020,7 +2036,7 @@ export default function OfficeDashboardScreen({ navigation, initialSection }) {
                                 <Text style={styles.roleMenuItemText}>
                                   {isUpdating
                                     ? 'Updating...'
-                                    : `${choice.charAt(0).toUpperCase()}${choice.slice(1)}`}
+                                    : formatRoleChoiceLabel(choice)}
                                 </Text>
                               </Pressable>
                             );
@@ -2856,6 +2872,10 @@ function createStyles(palette, isDark, responsiveMetrics) {
   roleManager: {
     backgroundColor: isDark ? '#3A2910' : '#FFF7ED',
     borderColor: isDark ? '#A77925' : '#FED7AA',
+  },
+  roleGeneralManager: {
+    backgroundColor: isDark ? '#18314A' : '#EEF6FF',
+    borderColor: isDark ? '#3B82B8' : '#BAE6FD',
   },
   roleAdmin: {
     backgroundColor: isDark ? '#35121C' : '#FEF2F2',

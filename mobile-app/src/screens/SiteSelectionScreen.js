@@ -100,8 +100,7 @@ export default function SiteSelectionScreen({ navigation, onSelectedSiteChange }
   const { width } = useWindowDimensions();
   const responsiveMetrics = useMemo(() => getResponsiveMetrics(width), [width]);
   const styles = useMemo(() => createStyles(palette, isDark, responsiveMetrics), [palette, isDark, responsiveMetrics]);
-  const isPrivileged =
-    profile?.role === 'admin' || profile?.role === 'supervisor' || profile?.role === 'manager';
+  const isPrivileged = ['admin', 'supervisor', 'manager', 'general_manager'].includes(profile?.role);
   const [sites, setSites] = useState([]);
   const [selectedSite, setSelectedSite] = useState(null);
   const [loading, setLoading] = useState(true);

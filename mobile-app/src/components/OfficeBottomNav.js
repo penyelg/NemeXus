@@ -67,6 +67,27 @@ const ADMIN_ITEMS = [
     params: { section: 'roles' },
   },
 ];
+const GENERAL_MANAGER_ITEMS = [
+  {
+    ...DEFAULT_ITEMS[0],
+    params: { section: 'readings' },
+  },
+  ...DEFAULT_ITEMS.slice(1),
+  {
+    key: 'approvals',
+    label: 'Approvals',
+    iconName: 'notifications-outline',
+    routeName: 'office-dashboard',
+    params: { section: 'approvals' },
+  },
+  {
+    key: 'roles',
+    label: 'Roles',
+    iconName: 'people-outline',
+    routeName: 'office-dashboard',
+    params: { section: 'roles' },
+  },
+];
 
 export default function OfficeBottomNav({ activeKey, navigation, variant = 'office', currentSite }) {
   const { profile } = useAuth();
@@ -101,7 +122,15 @@ export default function OfficeBottomNav({ activeKey, navigation, variant = 'offi
       ];
     }
 
-    return profile?.role === 'admin' ? ADMIN_ITEMS : DEFAULT_ITEMS;
+    if (profile?.role === 'admin') {
+      return ADMIN_ITEMS;
+    }
+
+    if (profile?.role === 'general_manager') {
+      return GENERAL_MANAGER_ITEMS;
+    }
+
+    return DEFAULT_ITEMS;
   }, [currentSite, profile?.role, variant]);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const activeScales = useRef({}).current;

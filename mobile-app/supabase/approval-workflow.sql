@@ -11,7 +11,7 @@ alter table public.profiles
 drop constraint if exists profiles_role_check;
 
 alter table public.profiles
-add constraint profiles_role_check check (role in ('operator', 'supervisor', 'manager', 'admin'));
+add constraint profiles_role_check check (role in ('operator', 'supervisor', 'manager', 'general_manager', 'admin'));
 
 create or replace function public.is_approved_user()
 returns boolean
@@ -27,7 +27,7 @@ as $$
       and is_active = true
       and (
         is_approved = true
-        or role in ('supervisor', 'manager', 'admin')
+        or role in ('supervisor', 'manager', 'general_manager', 'admin')
       )
   )
 $$;
@@ -39,13 +39,13 @@ security definer
 set search_path = public
 as $$
 begin
-  if auth.uid() = old.id and coalesce(public.current_role(), 'operator') not in ('admin', 'supervisor', 'manager') then
+  if auth.uid() = old.id and coalesce(public.current_role(), 'operator') not in ('admin', 'supervisor', 'manager', 'general_manager') then
     if new.role is distinct from old.role
       or new.is_active is distinct from old.is_active
       or new.is_approved is distinct from old.is_approved
       or new.approved_at is distinct from old.approved_at
       or new.approved_by is distinct from old.approved_by then
-      raise exception 'Only a manager, supervisor, or admin can change approval or role fields.';
+      raise exception 'Only a manager, supervisor, general manager, or admin can change approval or role fields.';
     end if;
   end if;
 
@@ -66,7 +66,7 @@ for select
 using (
   (
     auth.uid() = id
-    or public.current_role() in ('admin', 'supervisor', 'manager')
+    or public.current_role() in ('admin', 'supervisor', 'manager', 'general_manager')
   )
   or (
     auth.uid() is not null
@@ -78,8 +78,8 @@ drop policy if exists "profiles self update" on public.profiles;
 create policy "profiles self update"
 on public.profiles
 for update
-using (auth.uid() = id or public.current_role() in ('admin', 'supervisor', 'manager'))
-with check (auth.uid() = id or public.current_role() in ('admin', 'supervisor', 'manager'));
+using (auth.uid() = id or public.current_role() in ('admin', 'supervisor', 'manager', 'general_manager'))
+with check (auth.uid() = id or public.current_role() in ('admin', 'supervisor', 'manager', 'general_manager'));
 
 drop policy if exists "all active users can select sites" on public.sites;
 create policy "approved users can select sites"
@@ -96,7 +96,7 @@ on public.site_assignments
 for select
 using (
   user_id = auth.uid()
-  or public.current_role() in ('admin', 'supervisor', 'manager')
+  or public.current_role() in ('admin', 'supervisor', 'manager', 'general_manager')
 );
 
 drop policy if exists "users can read own readings or elevated roles" on public.readings;
@@ -123,17 +123,17 @@ drop policy if exists "readings admin update" on public.readings;
 create policy "readings admin update"
 on public.readings
 for update
-using (public.current_role() in ('admin', 'supervisor', 'manager'))
-with check (public.current_role() in ('admin', 'supervisor', 'manager'));
+using (public.current_role() in ('admin', 'supervisor', 'manager', 'general_manager'))
+with check (public.current_role() in ('admin', 'supervisor', 'manager', 'general_manager'));
 
 drop policy if exists "reading audit visible to supervisors" on public.reading_audit_log;
 create policy "reading audit visible to supervisors"
 on public.reading_audit_log
 for select
-using (public.current_role() in ('admin', 'supervisor', 'manager'));
+using (public.current_role() in ('admin', 'supervisor', 'manager', 'general_manager'));
 
 update public.profiles
 set
   is_approved = true,
   approved_at = coalesce(approved_at, timezone('utc', now()))
-where role in ('admin', 'supervisor', 'manager');
+where role in ('admin', 'supervisor', 'manager', 'general_manager');
